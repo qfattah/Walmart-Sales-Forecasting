@@ -1,202 +1,249 @@
-## Walmart Sales Forecasting
+# Walmart Sales Forecasting
 
-This project aims to build a machine learning model to predict weekly sales for Walmart stores and departments using historical sales data, store information, holiday events, and economic factors. The project involves data preprocessing, feature engineering, and model training to improve sales forecasting and handle seasonal trends. The goal is to create an accurate and robust predictive model evaluated using RMSE. 
+## Project Overview
 
-Competition link: [Walmart Sales Prediction on Kaggle](https://www.kaggle.com/competitions/walmart-sales-prediction/overview)  
-You can review the code here: [Walmart_Sales_Forecast](https://github.com/qfattah/Walmart-Sales-Forecasting/blob/main/Walmart_Sales_Forecat.ipynb)
+This project develops a time series forecasting framework to predict weekly sales for Walmart stores and departments using historical sales data, store information, holiday events, and economic indicators.
 
+The objective is to evaluate multiple forecasting approaches and determine which model produces the most accurate and stable predictions across different product categories.
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Setup](#setup)
-  - [Prerequisites](#prerequisites)
-  - [Libraries](#libraries)
-- [Walmart Sales Forecasting Code Sections](#walmart-sales-forecasting-code-sections)
-  - [Importing the Data and Visualizing it](#importing-the-data-and-visualizing-it)
-  - [Data Pre-Processing](#data-pre-processing)
-  - [Stationarity Testing (ADF Test)](#stationarity-testing-adf-test)
-- [SARIMA Model](#sarima-model)
-- [Exponential Smoothing Modeling](#️-exponential-smoothing-modeling)
-- [Prophet Forecasting](#-prophet-forecasting)
-- [Conclusion - Model Selection Note](#conclusion---model-selection-note)
+The project integrates:
 
+- Time series visualization and exploratory analysis  
+- Data preprocessing and missing value handling  
+- Stationarity testing using the Augmented Dickey-Fuller (ADF) test  
+- SARIMA time series modeling  
+- Exponential Smoothing (Holt-Winters) forecasting  
+- Facebook Prophet forecasting  
+- Model evaluation using MAE, MSE, and MAPE  
 
+Competition link:  
+https://www.kaggle.com/competitions/walmart-sales-prediction/overview  
 
-## Introduction
+You can review the code here:  
+https://github.com/qfattah/Walmart-Sales-Forecasting/blob/main/Walmart_Sales_Forecat.ipynb
 
-The project involves the following steps:
-1. **Importing Libraries**: Importing necessary libraries for forecasting, data processing, and visualization.
-2. **Importing the Data and Visualizing it**: Observe trends, seaonal trends and sales magnitude.
-3. **Data Pre-Processing**: Handle missing values, and preprocessing the data eo ensure stationarity.
-4. **SARIMA Model Training and Forecasting**: Univariate time series forecasting model that extends ARIMA by incorporating seasonal components. Combines autoregressive (AR), differencing (I), and moving average (MA) terms with seasonal analogs to capture both short-term dependencies and repeating seasonal patterns in the data.
-5. **Exponential Smoothing Model Training and Forecasting**: Univariate forecasting technique that applies weighted averages of past observations, where the weights decrease exponentially over time. Suitable for capturing level, trend, and seasonality components in time series data depending on the chosen variant (Simple, Holt, Holt-Winters).
-6. **Prophet Model Forecasting**: Univariate forecasting model developed by Facebook that decomposes time series into trend, seasonality, and holiday effects. Designed for business time series with strong seasonal patterns and missing data, it provides interpretable parameters and handles non-linear trends with changepoint detection.
+---
 
+## Business Context
 
-## Setup
+Retail forecasting plays a critical role in:
 
-### Prerequisites
-- Python 3.x
-- Jupyter Notebook
+- Inventory planning  
+- Demand forecasting  
+- Workforce scheduling  
+- Promotion planning  
+- Supply chain optimization  
 
-### Libraries
-Install the required libraries using pip:
-```bash
-pip install numpy pandas matplotlib seaborn statsmodels tqdm scikit-learn prophet tensorflow statsmodels prophet tensorflow;
-```
+Retail sales data often exhibits **strong seasonality**, **holiday effects**, and **non-linear trends**, making time series forecasting techniques essential for accurate demand prediction.
 
-## Walmart Sales Forecasting Code Sections
+The goal of this project is to evaluate different forecasting models and identify the most reliable method for predicting sales across product categories.
 
-### Importing the Data and Visualizing it
-- Visualized the Sales over time by Category.
+---
 
-### Data Pre-Processing
-- Split the dataset by product category and applied interpolation to address missing values.
+## Technical Approach
 
-### Stationarity Testing (ADF Test)
-- A custom function `test_stationarity()` was implemented to assess time series stationarity using the **Augmented Dickey-Fuller (ADF) test**.
-- The function outputs key diagnostic information:
-  - ADF statistic  
-  - p-value  
-  - Number of lags used  
-  - Number of observations used  
-  - Critical values at 1%, 5%, and 10% confidence levels  
-  - A conclusion on stationarity based on the p-value
+### 1. Data Import and Visualization
 
-- The test was applied to the following product category datasets:
-  - `df_men` — *Men Clothing Sales*
-  - `df_women` — *Women Clothing Sales*
-  - `df_other` — *Other Clothing Sales*
+The dataset is loaded and visualized to understand:
 
-- **Results:**
-  - `df_women` was **stationary** (*p < 0.05*)  
-  - `df_men` and `df_other` were **not stationary** (*p > 0.05*)
+- Overall sales trends
+- Seasonal patterns
+- Category-level demand variation
 
-- **Action Taken:**
-  - Applied **first-order differencing** to the non-stationary time series (`df_men` and `df_other`) to achieve stationarity prior to model training.
+Sales data is analyzed separately for three product categories:
 
-## SARIMA Model
+- **Men Clothing**
+- **Women Clothing**
+- **Other Clothing**
 
-- Defined a function `run_sarima_model()` to train and evaluate a SARIMA model for each product category.
+Initial visualization helps identify seasonal behavior and overall sales magnitude.
 
-- **Workflow includes:**
-  - Splitting the time series into training and testing sets (default 80/20).
-  - Fitting the **SARIMA** model on the differenced series to ensure stationarity.
-  - Forecasting on the test set and **inverting the differencing** to return forecasts to the original scale.
-  - Calculating evaluation metrics:  
-    - **MAE** (Mean Absolute Error)  
-    - **MSE** (Mean Squared Error)  
-    - **MAPE** (Mean Absolute Percentage Error)
+---
 
-- **Visualization:**
-  - Overlays the forecast on top of the original series with a train-test split marker.
+### 2. Data Preprocessing
 
-- **ACF/PACF Analysis:**
-  - ACF showed significant spikes at lags 1, 2, and 11 → suggests autocorrelation and seasonality.
-  - PACF showed strong lags at 1 and 11 → supports inclusion of AR and seasonal AR terms.
-  - Seasonal differencing at lag 12 used to capture yearly seasonality in monthly data.
+Several preprocessing steps are applied before modeling:
 
-- **Model Parameters:**
-  - **Order (p,d,q)** = (1, 0, 1)  
-  - **Seasonal Order (P,D,Q,s)** = (1, 1, 0, 12)  
-    - Chosen based on ACF/PACF plots and constrained by limited data (48 months).
+- Splitting the dataset by product category
+- Handling missing values using interpolation
+- Ensuring the time series structure is consistent
+- Preparing the data for statistical modeling
 
-- **Results:**
-  - Forecasts were generated for:
-    - `df_men` — *Men Clothing*
-    - `df_women` — *Women Clothing*
-    - `df_other` — *Other Clothing*
-  - Forecasts were evaluated and visualized for each category.
+Proper preprocessing ensures model stability and improves forecast reliability.
 
-- **Note:**  
-  - Seasonal MA (`Q`) was initially suggested by ACF but set to 0 due to the limited training window and improved performance.
+---
 
+### 3. Stationarity Testing (ADF Test)
 
-### 📈 Exponential Smoothing Modeling
+A custom function `test_stationarity()` is implemented using the **Augmented Dickey-Fuller (ADF) test** to determine whether each time series is stationary.
 
-- A function `run_exponential_smoothing()` was implemented to forecast sales using **Holt-Winters Exponential Smoothing**.
+The function outputs:
 
-- **Workflow includes:**
-  - Splitting the dataset into training and testing sets (default: 80/20 split).
-  - Fitting an **additive trend and seasonal** Exponential Smoothing model (`trend='add'`, `seasonal='add'`, `seasonal_periods=12`).
-  - Forecasting on the test set without the need for differencing.
-  - Combining the forecast with actual values for side-by-side comparison.
+- ADF statistic  
+- p-value  
+- Number of lags used  
+- Number of observations used  
+- Critical values at 1%, 5%, and 10% significance levels  
 
-- **Evaluation Metrics:**
-  - **MAE** (Mean Absolute Error)  
-  - **MSE** (Mean Squared Error)  
-  - **MAPE** (Mean Absolute Percentage Error)
+#### Results
 
-- **Visualization:**
-  - Forecast plotted alongside the original sales data.
-  - Vertical line marks the **train-test split**.
+| Dataset | Result |
+|------|------|
+| Women Clothing | Stationary (p < 0.05) |
+| Men Clothing | Non-stationary |
+| Other Clothing | Non-stationary |
 
-- **Parameters Used:**
-  - `trend='add'` – additive trend component  
-  - `seasonal='add'` – additive seasonal component  
-  - `seasonal_periods=12` – reflects yearly seasonality in monthly data
+#### Action Taken
 
-- **Models were run for:**
-  - `df_men` — *Men Clothing*  
-  - `df_women` — *Women Clothing*  
-  - `df_other` — *Other Clothing*
+First-order differencing was applied to the non-stationary series (`df_men`, `df_other`) before model training.
 
-- **Outcome:**
-  - Generated interpretable and smooth forecasts that adapt to both trend and seasonality in the sales data.
+---
 
-### 🔮 Prophet Forecasting
+## Forecasting Models
 
-- A function `run_prophet_forecasting()` was implemented to forecast sales using **Facebook Prophet**, a time series model that automatically handles **trend, seasonality, and holiday effects**.
+### 1. SARIMA Model
 
-- **Workflow includes:**
-  - Splitting the dataset into training and testing sets (default: 80/20 split).
-  - Preparing data for Prophet by renaming columns to `ds` (date) and `y` (target variable).
-  - Fitting the Prophet model on the training data.
-  - Creating a future dataframe and generating forecasts for the test period.
-  - Combining actual and forecasted values for visualization and evaluation.
+SARIMA extends ARIMA by incorporating seasonal components.
 
-- **Evaluation Metrics:**
-  - **MAE** (Mean Absolute Error)  
-  - **MSE** (Mean Squared Error)  
-  - **MAPE** (Mean Absolute Percentage Error)
+The SARIMA workflow includes:
 
-- **Visualization:**
-  - Plots the actual vs. predicted sales values over time.
-  - Dashed vertical line marks the **train-test split**.
+- Splitting the dataset into training and testing sets
+- Fitting the SARIMA model on stationary data
+- Generating forecasts
+- Inverting differencing to return forecasts to the original scale
+- Evaluating performance using MAE, MSE, and MAPE
 
-- **Key Features of Prophet:**
-  - Automatically detects **changepoints** in trends.
-  - Handles **missing data** and **non-linear trends**.
-  - Built-in support for **monthly/weekly seasonality** (configured via `freq='M'` in this case).
+#### Model Configuration
 
-- **Models were run for:**
-  - `df_men` — *Men Clothing Sales*  
-  - `df_women` — *Women Clothing Sales*  
-  - `df_other` — *Other Clothing Sales*
+Order (p,d,q) = (1,0,1)  
+Seasonal Order (P,D,Q,s) = (1,1,0,12)
 
-- **Outcome:**
-  - Produced flexible forecasts that capture both seasonality and trend shifts without extensive manual tuning.
+#### Model Selection Process
 
-### Conclusion - Model Selection Note
+ACF and PACF plots were used to determine model parameters.
 
-After evaluating **SARIMA**, **Exponential Smoothing (Holt-Winters)**, and **Prophet** across three product categories (Men, Women, Other Clothing), the following results were observed:
+- ACF showed strong spikes at lags **1, 2, and 11**
+- PACF showed strong spikes at **1 and 11**
 
-| Category         | Best Model            | MAPE  | MAE   | MSE    |
-|------------------|------------------------|-------|--------|---------|
-| **Men Clothing**   | Exponential Smoothing | 3.62% | 25.70 | 778     |
-| **Women Clothing** | Exponential Smoothing | 3.78% | 120.97| 28,184  |
-| **Other Clothing** | Exponential Smoothing | 5.11% | 62.89 | 6,312   |
+This indicated both **short-term autocorrelation and yearly seasonal effects**.
 
-- **Exponential Smoothing outperformed SARIMA and Prophet across all three categories** in terms of MAE, MSE, and MAPE.
-- It delivered **more accurate and stable forecasts** without requiring differencing or complex hyperparameter tuning like SARIMA.
-- Prophet produced reasonable forecasts but underperformed compared to Exponential Smoothing in all metrics.
+---
 
-**Recommendation:**  
-Use **Exponential Smoothing (Holt-Winters)** as the primary forecasting model for all three product categories.
+### 2. Exponential Smoothing (Holt-Winters)
 
-**Next Steps:**
-- Consider grid-searching `trend`, `seasonal`, and `seasonal_periods` parameters to further optimize the Exponential Smoothing model.
-- Explore adding external regressors (holidays, promotions) if revisiting Prophet for complex seasonality.
-- Validate results with time series cross-validation to ensure long-term stability.
+Holt-Winters Exponential Smoothing models level, trend, and seasonality simultaneously.
 
+#### Model Configuration
 
+trend = 'add'  
+seasonal = 'add'  
+seasonal_periods = 12
+
+#### Workflow
+
+- Train/test split (80/20)
+- Fit model to training data
+- Generate forecasts for the validation period
+- Compare forecasts against actual values
+
+#### Evaluation Metrics
+
+- MAE (Mean Absolute Error)
+- MSE (Mean Squared Error)
+- MAPE (Mean Absolute Percentage Error)
+
+Exponential smoothing produced **smooth and interpretable forecasts** that captured both trend and seasonality.
+
+---
+
+### 3. Prophet Forecasting
+
+Prophet is a forecasting framework developed by Meta (Facebook) designed for business time series data.
+
+It decomposes time series into:
+
+- Trend
+- Seasonality
+- Holiday effects
+
+#### Workflow
+
+- Convert dataset into Prophet format (`ds`, `y`)
+- Fit model on training data
+- Generate future forecasts
+- Compare predictions against actual values
+
+#### Key Advantages
+
+- Automatic changepoint detection
+- Handles missing data
+- Captures non-linear trends
+- Built-in seasonal components
+
+---
+
+## Model Evaluation
+
+Models were evaluated using the following metrics:
+
+- **MAE** — Mean Absolute Error  
+- **MSE** — Mean Squared Error  
+- **MAPE** — Mean Absolute Percentage Error  
+
+| Category | Best Model | MAPE | MAE | MSE |
+|------|------|------|------|------|
+| Men Clothing | Exponential Smoothing | 3.62% | 25.70 | 778 |
+| Women Clothing | Exponential Smoothing | 3.78% | 120.97 | 28,184 |
+| Other Clothing | Exponential Smoothing | 5.11% | 62.89 | 6,312 |
+
+### Key Finding
+
+**Exponential Smoothing consistently outperformed SARIMA and Prophet across all categories.**
+
+It produced the lowest error metrics while requiring fewer modeling assumptions and less parameter tuning.
+
+---
+
+## Key Skills Demonstrated
+
+- Time Series Forecasting
+- Stationarity Testing (ADF)
+- SARIMA Modeling
+- Exponential Smoothing (Holt-Winters)
+- Prophet Forecasting
+- Model Evaluation and Comparison
+- Data Preprocessing and Visualization
+
+---
+
+## Tools & Libraries
+
+- Python  
+- Pandas  
+- NumPy  
+- Matplotlib  
+- Seaborn  
+- Statsmodels  
+- Prophet  
+- Scikit-learn  
+
+---
+
+## Impact & Practical Applications
+
+This project demonstrates how different forecasting techniques perform when applied to retail sales data with strong seasonal patterns.
+
+The methodology can be extended to:
+
+- Inventory demand forecasting
+- Supply chain planning
+- Retail promotion forecasting
+- Category-level demand prediction
+- Store-level operational planning
+
+---
+
+## Author
+
+Qusai Fattah  
+Data Science | Time Series Forecasting | Supply Chain Analytics
